@@ -1,7 +1,5 @@
-//! [![Star me](https://img.shields.io/github/stars/althonos/pubchem.rs.svg?style=social&label=Star&maxAge=3600)](https://github.com/althonos/pubchem.rs/stargazers)
-//!
-//! *Rust data structures and parser for the [UniprotKB database(s)].*
-//!
+#![doc = include_str!("../README.md")]
+
 extern crate form_urlencoded;
 extern crate quick_xml;
 extern crate thiserror;
