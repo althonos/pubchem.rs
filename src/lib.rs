@@ -139,6 +139,27 @@ impl Compound {
         }
     }
 
+    pub fn with_inchi(inchi: &str) -> Self {
+        Self {
+            namespace: Cow::Borrowed("inchi"),
+            identifier: Cow::Owned(inchi.to_string())
+        }
+    }
+
+    pub fn with_inchikey(inchikey: &str) -> Self {
+        Self {
+            namespace: Cow::Borrowed("inchikey"),
+            identifier: Cow::Owned(inchikey.to_string())
+        }
+    }
+
+    // pub fn with_sdf(sdf: &str) -> Self {
+    //     Self {
+    //         namespace: Cow::Borrowed("sdf"),
+    //         identifiers: Cow::Owned(sdf.to_string())
+    //     }
+    // }
+
     /// Request the REST API for the given operation.
     ///
     /// The response is checked to see if the HTTP client or the API errored,
@@ -169,27 +190,6 @@ impl Compound {
         }
     }
 
-    // pub fn with_inchi(inchi: &str) -> Self {
-    //     Self {
-    //         namespace: Cow::Borrowed("inchi"),
-    //         identifiers: Cow::Owned(inchi.to_string())
-    //     }
-    // }
-    //
-    // pub fn with_inchikey(inchikey: &str) -> Self {
-    //     Self {
-    //         namespace: Cow::Borrowed("inchikey"),
-    //         identifiers: Cow::Owned(inchikey.to_string())
-    //     }
-    // }
-    //
-    // pub fn with_sdf(sdf: &str) -> Self {
-    //     Self {
-    //         namespace: Cow::Borrowed("sdf"),
-    //         identifiers: Cow::Owned(sdf.to_string())
-    //     }
-    // }
-
     /// Retrieve several properties at once for the compound.
     pub fn properties<'p, P>(&self, properties: P) -> Result<rest::Properties, Error>
     where
@@ -209,6 +209,12 @@ impl Compound {
         self.request(&path)
             .and_then(|response| rest::PropertyTable::from_api_response(response))
             .map(|mut table| table.properties.pop().unwrap())
+    }
+
+    /// Retrieve the main PubChem designation for the compound.
+    pub fn title(&self) -> Result<Option<String>, Error> {
+        let properties = self.properties(&[CompoundProperty::Title])?;
+        Ok(properties.title)
     }
 
     /// Retrieve the molecular formula of the compound.
@@ -305,6 +311,18 @@ mod tests {
             .properties(&[CompoundProperty::Title])
             .expect("compound property retrieval should not fail");
         assert_eq!(properties.cid, 2244);
+    }
+
+    #[test]
+    fn compound_with_inchikey() {
+        let compound = Compound::with_inchikey("AUJXLBOHYWTPFV-UHFFFAOYSA-N");
+        assert_eq!(compound.title().unwrap(), Some(String::from("Echinomycin")));
+    }
+
+    #[test]
+    fn compound_with_inchi() {
+        let compound = Compound::with_inchi("InChI=1S/C3H6O/c1-3(2)4/h1-2H3");
+        assert_eq!(compound.title().unwrap(), Some(String::from("Acetone")));
     }
 
     #[test]
