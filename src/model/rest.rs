@@ -1,6 +1,9 @@
 //! Raw data types returned by the Power User Gateway REST API.
 
 use std::io::BufRead;
+use std::iter::IntoIterator;
+use std::ops::Deref;
+use std::ops::DerefMut;
 
 use quick_xml::events::BytesStart;
 use quick_xml::Reader;
@@ -49,6 +52,27 @@ pub struct Waiting {
 #[derive(Default, Debug, PartialEq)]
 pub struct PropertyTable {
     pub properties: Vec<Properties>,
+}
+
+impl Deref for PropertyTable {
+    type Target = Vec<Properties>;
+    fn deref(&self) -> &Self::Target {
+        &self.properties
+    }
+}
+
+impl DerefMut for PropertyTable {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.properties
+    }
+}
+
+impl IntoIterator for PropertyTable {
+    type Item = Properties;
+    type IntoIter = <Vec<Properties> as IntoIterator>::IntoIter;
+    fn into_iter(self) -> Self::IntoIter {
+        self.properties.into_iter()
+    }
 }
 
 impl FromXml for PropertyTable {
