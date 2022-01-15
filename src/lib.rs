@@ -18,6 +18,7 @@ use std::borrow::Cow;
 use self::error::Error;
 use self::model::rest;
 use self::parser::FromApiResponse;
+use self::utils::Join;
 
 named_enum! {
     #[derive(Debug, PartialEq, Eq)]
@@ -109,7 +110,7 @@ named_enum! {
 }
 
 #[derive(Debug)]
-/// A client to retrieve information about a single PubChem compound.
+/// A client for retrieving information about a single PubChem compound.
 pub struct Compound {
     namespace: Cow<'static, str>,
     identifier: Cow<'static, str>,
@@ -198,17 +199,8 @@ impl Compound {
     where
         P: IntoIterator<Item = &'p CompoundProperty>,
     {
-        let path = {
-            let mut path = String::from("/property/");
-            let mut prop_iter = properties.into_iter().peekable();
-            while let Some(property) = prop_iter.next() {
-                path.push_str(property.name());
-                if prop_iter.peek().is_some() {
-                    path.push(',');
-                }
-            }
-            path
-        };
+        let mut path = String::from("/property/");
+        path.push_str(&properties.into_iter().map(CompoundProperty::name).join(","));
         self.request(&path)
             .and_then(|response| rest::PropertyTable::from_api_response(response))
             .map(|mut table| table.properties.pop().unwrap())
@@ -262,10 +254,13 @@ impl Compound {
     // pub fn record(&self) {
     //     unimplemented!()
     // }
-    //
-    // pub fn synonyms(&self) {
-    //     unimplemented!()
-    // }
+
+    /// Retrieve synonym names for the compound.
+    pub fn synonyms(&self) -> Result<Vec<String>, Error> {
+        self.request("synonyms")
+            .and_then(|response| rest::InformationList::from_api_response(response))
+            .map(|mut list| list.informations.pop().unwrap().synonyms)
+    }
 
     /// Retrieve the Compound IDs designating the compound.
     pub fn cids(&self) -> Result<Vec<i32>, Error> {
@@ -307,6 +302,64 @@ impl Compound {
     // pub fn conformers(&self) {
     //
     // }
+}
+
+#[derive(Debug)]
+/// A client for retrieving information about multiple PubChem compoumds at once.
+pub struct Compounds {
+    namespace: Cow<'static, str>,
+    identifiers: Cow<'static, str>,
+}
+
+impl Compounds {
+    /// Query several compounds with the given compound IDs.
+    pub fn new<I: IntoIterator<Item = u32>>(ids: I) -> Self {
+        Self {
+            namespace: Cow::Borrowed("cid"),
+            identifiers: Cow::Owned(ids.into_iter().join(",")),
+        }
+    }
+
+    /// Request the REST API for the given operation.
+    ///
+    /// The response is checked to see if the HTTP client or the API errored,
+    /// otherwise the raw response is returned so that it can be parsed by
+    /// the appropriate method.
+    ///
+    fn request(&self, operation: &str) -> Result<ureq::Response, Error> {
+        let url = format!(
+            "https://pubchem.ncbi.nlm.nih.gov/rest/pug/{dom}/{ns}/{op}/XML",
+            dom = "compound",
+            ns = &self.namespace,
+            op = operation
+        );
+        let form_data = form_urlencoded::Serializer::new(String::new())
+            .append_pair(&self.namespace, &self.identifiers)
+            .finish();
+        match ureq::post(&url)
+            .set("Accept", "application/xml")
+            .set("Content-Type", "application/x-www-form-urlencoded")
+            .send_string(&form_data)
+        {
+            Err(ureq::Error::Status(400 | 404 | 405 | 500 | 501 | 503 | 504, response)) => {
+                let fault = rest::Fault::from_api_response(response)?;
+                Err(Error::Api(fault.into()))
+            }
+            Err(e) => Err(Error::Request(e)),
+            Ok(response) => Ok(response),
+        }
+    }
+
+    /// Retrieve several properties at once for the compounds.
+    pub fn properties<'p, P>(&self, properties: P) -> Result<rest::PropertyTable, Error>
+    where
+        P: IntoIterator<Item = &'p CompoundProperty>,
+    {
+        let mut path = String::from("/property/");
+        path.push_str(&properties.into_iter().map(CompoundProperty::name).join(","));
+        self.request(&path)
+            .and_then(|response| rest::PropertyTable::from_api_response(response))
+    }
 }
 
 #[cfg(test)]
@@ -374,12 +427,36 @@ mod tests {
     }
 
     #[test]
+    fn compound_synonyms() {
+        let compound = Compound::new(180);
+        let synonyms = compound.synonyms().unwrap();
+        assert_eq!(synonyms.len(), 578);
+        assert_eq!(&synonyms[0], "acetone");
+        assert_eq!(&synonyms[1], "2-propanone");
+    }
+
+    #[test]
     fn compound_name_not_found() {
         let compound = Compound::with_name("none");
         match compound.cids() {
             Err(Error::Api(ApiError::NotFound(_))) => (),
             Err(e) => panic!("unexpected error {}", e),
             Ok(_) => panic!("unexpected success"),
+        }
+    }
+
+    #[test]
+    fn compounds_properties() {
+        let compounds = Compounds::new([6140, 145742, 6305]);
+        let property_table = compounds.properties(&[CompoundProperty::Title]).unwrap();
+        assert_eq!(property_table.properties.len(), 3);
+        for properties in property_table.properties {
+            match properties.cid {
+                6140 => assert_eq!(properties.title.unwrap(), "Phenylalanine"),
+                145742 => assert_eq!(properties.title.unwrap(), "Proline"),
+                6305 => assert_eq!(properties.title.unwrap(), "Tryptophan"),
+                _ => unreachable!(),
+            }
         }
     }
 }
