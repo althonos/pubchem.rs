@@ -53,10 +53,32 @@ use pubchem::CompoundProperty::*;
 let properties = pubchem::Compound::new(5950)
     .properties(&[Title, MolecularFormula, CanonicalSMILES])
     .unwrap();
-    
+
 properties.molecular_formula; // Some("C3H7NO2")
 properties.canonical_smiles; // Some("CC(C(=O)O)N")
 properties.isomeric_smiles; // Some("C[C@@H](C(=O)O)N")
+```
+
+To retrieve metadata from multiple compounds at once, use the `Compounds`
+struct and use the `properties` method to pack everything into a single
+query:
+
+```rust
+use pubchem::CompoundProperty::*;
+
+// retrieve metadata from the three aromatic L-amino acids at once
+for prop in pubchem::Compounds::new([6140, 145742, 6305])
+    .properties(&[Title, IUPACName, ExactMass])
+    .unwrap()
+{
+    println!(
+        "[{cid}] {title} {iupac} {mass}g/mol",
+        cid = prop.cid,
+        title = prop.title.unwrap(),
+        iupac = prop.iupac_name.unwrap(),
+        mass = prop.exact_mass.unwrap(),
+    );
+}
 ```
 
 ## 💭 Feedback

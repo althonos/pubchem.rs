@@ -447,13 +447,13 @@ mod tests {
 
     #[test]
     fn compounds_properties() {
-        let compounds = Compounds::new([6140, 145742, 6305]);
+        let compounds = Compounds::new([6140, 6057, 6305]);
         let property_table = compounds.properties(&[CompoundProperty::Title]).unwrap();
         assert_eq!(property_table.properties.len(), 3);
         for properties in property_table.properties {
             match properties.cid {
                 6140 => assert_eq!(properties.title.unwrap(), "Phenylalanine"),
-                145742 => assert_eq!(properties.title.unwrap(), "Proline"),
+                6057 => assert_eq!(properties.title.unwrap(), "Tyrosine"),
                 6305 => assert_eq!(properties.title.unwrap(), "Tryptophan"),
                 _ => unreachable!(),
             }
