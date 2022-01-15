@@ -1,6 +1,7 @@
 #[allow(unused_macros)]
 macro_rules! parse_inner {
     ($event:expr, $reader:expr, $buffer:expr, $($rest:tt)*) => ({
+        #[allow(unused_imports)]
         loop {
             use $crate::quick_xml::events::BytesEnd;
             use $crate::quick_xml::events::BytesStart;

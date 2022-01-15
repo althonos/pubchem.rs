@@ -1,10 +1,8 @@
 //! Ubiquitous types for error management.
 
-use std::error::Error as StdError;
 use std::io::Error as IoError;
 use std::num::ParseFloatError;
 use std::num::ParseIntError;
-use std::str::ParseBoolError;
 
 use quick_xml::Error as XmlError;
 use thiserror::Error;

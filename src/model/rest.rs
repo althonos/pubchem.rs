@@ -16,6 +16,7 @@ pub struct Fault {
 }
 
 impl FromXml for Fault {
+    #[allow(unused_variables)]
     fn from_xml<B: BufRead>(
         event: &BytesStart,
         reader: &mut Reader<B>,
@@ -51,6 +52,7 @@ pub struct PropertyTable {
 }
 
 impl FromXml for PropertyTable {
+    #[allow(unused_variables)]
     fn from_xml<B: BufRead>(
         event: &BytesStart,
         reader: &mut Reader<B>,
@@ -116,6 +118,7 @@ pub struct Properties {
 }
 
 impl FromXml for Properties {
+    #[allow(unused_variables)]
     fn from_xml<B: BufRead>(
         event: &BytesStart,
         reader: &mut Reader<B>,
@@ -190,6 +193,7 @@ pub struct InformationList {
 }
 
 impl FromXml for InformationList {
+    #[allow(unused_variables)]
     fn from_xml<B: BufRead>(
         event: &BytesStart,
         reader: &mut Reader<B>,
@@ -252,6 +256,7 @@ pub struct Information {
 }
 
 impl FromXml for Information {
+    #[allow(unused_variables)]
     fn from_xml<B: BufRead>(
         event: &BytesStart,
         reader: &mut Reader<B>,
@@ -323,11 +328,12 @@ impl FromXml for Information {
 
 #[derive(Debug, PartialEq)]
 pub struct Annotation {
-    heading: String,
-    ty: String,
+    pub heading: String,
+    pub ty: String,
 }
 
 impl FromXml for Annotation {
+    #[allow(unused_variables)]
     fn from_xml<B: BufRead>(
         event: &BytesStart,
         reader: &mut Reader<B>,
@@ -335,7 +341,20 @@ impl FromXml for Annotation {
     ) -> Result<Self, Error> {
         debug_assert_eq!(event.local_name(), b"Annotation");
 
-        unimplemented!()
+        let mut a = Annotation {
+            heading: String::new(),
+            ty: String::new(),
+        };
+        parse_inner! {event, reader, buffer,
+            e @ b"Heading" => {
+                a.heading = reader.read_text(e.name(), buffer)?;
+            },
+            e @ b"Type" => {
+                a.ty = reader.read_text(e.name(), buffer)?;
+            },
+        };
+
+        Ok(a)
     }
 }
 
@@ -350,6 +369,7 @@ pub struct DateTime {
 }
 
 impl FromXml for DateTime {
+    #[allow(unused_variables)]
     fn from_xml<B: BufRead>(
         event: &BytesStart,
         reader: &mut Reader<B>,
@@ -392,6 +412,7 @@ pub struct IdentifierList {
 }
 
 impl FromXml for IdentifierList {
+    #[allow(unused_variables)]
     fn from_xml<B: BufRead>(
         event: &BytesStart,
         reader: &mut Reader<B>,
