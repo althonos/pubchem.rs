@@ -118,6 +118,7 @@ pub struct Compound {
 }
 
 impl Compound {
+    /// Create a new `Compound` from the given compound ID.
     pub fn new(id: u32) -> Self {
         Self {
             namespace: Cow::Borrowed("cid"),
@@ -125,6 +126,7 @@ impl Compound {
         }
     }
 
+    /// Create a new `Compound` matching the given compound name.
     pub fn with_name(name: &str) -> Self {
         Self {
             namespace: Cow::Borrowed("name"),
@@ -132,6 +134,7 @@ impl Compound {
         }
     }
 
+    /// Create a new `Compound` matching the given SMILES.
     pub fn with_smiles(smiles: &str) -> Self {
         Self {
             namespace: Cow::Borrowed("smiles"),
@@ -139,6 +142,7 @@ impl Compound {
         }
     }
 
+    /// Create a new `Compound` matching the given InChI.
     pub fn with_inchi(inchi: &str) -> Self {
         Self {
             namespace: Cow::Borrowed("inchi"),
@@ -146,6 +150,7 @@ impl Compound {
         }
     }
 
+    /// Create a new `Compound` matching the given InChIKey.
     pub fn with_inchikey(inchikey: &str) -> Self {
         Self {
             namespace: Cow::Borrowed("inchikey"),
@@ -212,9 +217,9 @@ impl Compound {
     }
 
     /// Retrieve the main PubChem designation for the compound.
-    pub fn title(&self) -> Result<Option<String>, Error> {
+    pub fn title(&self) -> Result<String, Error> {
         let properties = self.properties(&[CompoundProperty::Title])?;
-        Ok(properties.title)
+        Ok(properties.title.expect("All PubChem compounds should have a title."))
     }
 
     /// Retrieve the molecular formula of the compound.
@@ -222,11 +227,29 @@ impl Compound {
     /// # Example
     /// ```
     /// let compound = pubchem::Compound::with_name("aspirin");
-    /// assert_eq!( compound.molecular_formula().unwrap(), Some(String::from("C9H8O4")) );
+    /// assert_eq!(compound.molecular_formula().unwrap(), "C9H8O4");
     /// ```
-    pub fn molecular_formula(&self) -> Result<Option<String>, Error> {
+    pub fn molecular_formula(&self) -> Result<String, Error> {
         let properties = self.properties(&[CompoundProperty::MolecularFormula])?;
-        Ok(properties.molecular_formula)
+        Ok(properties.molecular_formula.expect("All PubChem compounds should have a formula."))
+    }
+
+    /// Retrieve the canonical SMILES string for the compound.
+    pub fn canonical_smiles(&self) -> Result<String, Error> {
+        let properties = self.properties(&[CompoundProperty::CanonicalSMILES])?;
+        Ok(properties.canonical_smiles.expect("All PubChem compounds should have a SMILES."))
+    }
+
+    /// Retrieve the isomeric SMILES string for the compound.
+    ///
+    /// # Example
+    /// ```
+    /// let alanine = pubchem::Compound::with_name("alanine");
+    /// assert_eq!(alanine.isomeric_smiles().unwrap(), "C[C@H](C(=O)O)N");
+    /// ```
+    pub fn isomeric_smiles(&self) -> Result<String, Error> {
+        let properties = self.properties(&[CompoundProperty::IsomericSMILES])?;
+        Ok(properties.isomeric_smiles.expect("All PubChem compounds should have a SMILES."))
     }
 
     // /// Retrieve the entire PubChem record for the compound.
