@@ -1,4 +1,4 @@
-# `pubchem.rs` [![Star me](https://img.shields.io/github/stars/althonos/uniprot.rs.svg?style=social&label=Star&maxAge=3600)](https://github.com/althonos/uniprot.rs/stargazers)
+# `pubchem.rs` [![Star me](https://img.shields.io/github/stars/althonos/pubchem.rs.svg?style=social&label=Star&maxAge=3600)](https://github.com/althonos/pubchem.rs/stargazers)
 
 *Rust data structures and client for the [PubChem](https://pubchem.ncbi.nlm.nih.gov/) [REST API](https://pubchemdocs.ncbi.nlm.nih.gov/pug-rest).*
 
@@ -75,6 +75,18 @@ for more details. -->
 This project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html)
 and provides a [changelog](https://github.com/althonos/pubchem.rs/blob/master/CHANGELOG.md)
 in the [Keep a Changelog](http://keepachangelog.com/en/1.0.0/) format.
+
+## 🔍 See Also
+
+If you're a bioinformatician and a Rustacean, you may be interested in these
+other libraries:
+
+- [`uniprot.rs`](https://github.com/althonos/uniprot.rs): Rust data structures
+  for the UniProtKB databases.
+- [`obofoundry.rs`](https://github.com/althonos/obofoundry.rs): Rust data
+  structures for the OBO Foundry.
+- [`fastobo`](https://github.com/fastobo/fastobo): Rust parser and abstract
+  syntax tree for Open Biomedical Ontologies.
 
 ## 📜 License
 
