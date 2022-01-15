@@ -347,13 +347,13 @@ mod tests {
     #[test]
     fn compound_with_inchikey() {
         let compound = Compound::with_inchikey("AUJXLBOHYWTPFV-UHFFFAOYSA-N");
-        assert_eq!(compound.title().unwrap(), Some(String::from("Echinomycin")));
+        assert_eq!(compound.title().unwrap(), "Echinomycin");
     }
 
     #[test]
     fn compound_with_inchi() {
         let compound = Compound::with_inchi("InChI=1S/C3H6O/c1-3(2)4/h1-2H3");
-        assert_eq!(compound.title().unwrap(), Some(String::from("Acetone")));
+        assert_eq!(compound.title().unwrap(), "Acetone");
     }
 
     #[test]
