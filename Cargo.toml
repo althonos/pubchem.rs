@@ -1,0 +1,19 @@
+[package]
+name = "pubchem"
+version = "0.1.0"
+authors = ["Martin Larralde <martin.larralde@embl.de>"]
+edition = "2021"
+license = "MIT"
+description = "Rust data structures and client for the PubChem API."
+repository = "https://github.com/althonos/pubchem.rs"
+homepage = "https://github.com/althonos/pubchem.rs"
+readme = "README.md"
+keywords = ["pubchem", "compound", "ncbi", "parser"]
+
+[dependencies]
+quick-xml = "0.22.0"
+thiserror = "1.0.30"
+[dependencies.ureq]
+version = "2.4.0"
+default-features = false
+features = ["tls"]
