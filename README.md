@@ -34,10 +34,12 @@ Use the methods to query the REST API with [`ureq`](https://crates.io/crates/ure
 Dedicated methods exist for common single properties:
 
 ```rust
-alanine.title()?; // "Alanine"
-alanine.molecular_formula()?; // "C3H7NO2"
-alanine.canonical_smiles()?; // "CC(C(=O)O)N"
-alanine.isomeric_smiles()?;  // "C[C@@H](C(=O)O)N"
+let alanine = pubchem::Compound::new(5950);
+
+alanine.title().unwrap(); // "Alanine"
+alanine.molecular_formula().unwrap(); // "C3H7NO2"
+alanine.canonical_smiles().unwrap(); // "CC(C(=O)O)N"
+alanine.isomeric_smiles().unwrap();  // "C[C@@H](C(=O)O)N"
 ```
 
 Each method will perform a single query to the PubChem API, which is inefficient
@@ -48,7 +50,10 @@ in a single query:
 ```rust
 use pubchem::CompoundProperty::*;
 
-let properties = alanine.properties(&[Title, MolecularFormula, CanonicalSMILES])?;
+let properties = pubchem::Compound::new(5950)
+    .properties(&[Title, MolecularFormula, CanonicalSMILES])
+    .unwrap();
+    
 properties.molecular_formula; // Some("C3H7NO2")
 properties.canonical_smiles; // Some("CC(C(=O)O)N")
 properties.isomeric_smiles; // Some("C[C@@H](C(=O)O)N")
