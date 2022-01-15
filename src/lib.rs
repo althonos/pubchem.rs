@@ -5,6 +5,7 @@
 extern crate quick_xml;
 extern crate thiserror;
 extern crate ureq;
+extern crate form_urlencoded;
 
 #[macro_use]
 mod parser;
@@ -14,11 +15,8 @@ mod utils;
 pub mod error;
 pub mod model;
 
-
 use std::borrow::Cow;
-use std::num::NonZeroU32;
 
-use self::error::ApiError;
 use self::error::Error;
 use self::model::rest;
 use self::parser::FromApiResponse;
@@ -116,28 +114,58 @@ named_enum! {
 /// A client to retrieve information about a single PubChem compound.
 pub struct Compound {
     namespace: Cow<'static, str>,
-    identifiers: Cow<'static, str>,
+    identifier: Cow<'static, str>,
 }
 
 impl Compound {
     pub fn new(id: u32) -> Self {
         Self {
             namespace: Cow::Borrowed("cid"),
-            identifiers: Cow::Owned(id.to_string()),
+            identifier: Cow::Owned(id.to_string()),
         }
     }
 
     pub fn with_name(name: &str) -> Self {
         Self {
             namespace: Cow::Borrowed("name"),
-            identifiers: Cow::Owned(name.to_string()),
+            identifier: Cow::Owned(name.to_string()),
         }
     }
 
     pub fn with_smiles(smiles: &str) -> Self {
         Self {
             namespace: Cow::Borrowed("smiles"),
-            identifiers: Cow::Owned(smiles.to_string()),
+            identifier: Cow::Owned(smiles.to_string()),
+        }
+    }
+
+    /// Request the REST API for the given operation.
+    ///
+    /// The response is checked to see if the HTTP client or the API errored,
+    /// otherwise the raw response is returned so that it can be parsed by
+    /// the appropriate method.
+    ///
+    fn request(&self, operation: &str) -> Result<ureq::Response, Error> {
+        let url = format!(
+            "https://pubchem.ncbi.nlm.nih.gov/rest/pug/{dom}/{ns}/{op}/XML",
+            dom = "compound",
+            ns = &self.namespace,
+            op = operation
+        );
+        let form_data = form_urlencoded::Serializer::new(String::new())
+            .append_pair(&self.namespace, &self.identifier)
+            .finish();
+        match ureq::post(&url)
+            .set("Accept", "application/xml")
+            .set("Content-Type", "application/x-www-form-urlencoded")
+            .send_string(&form_data)
+        {
+            Err(ureq::Error::Status(400 | 404 | 405 | 500 | 501 | 503 | 504, response)) => {
+                let fault = rest::Fault::from_api_response(response)?;
+                Err(Error::Api(fault.into()))
+            }
+            Err(e) => Err(Error::Request(e)),
+            Ok(response) => Ok(response),
         }
     }
 
@@ -167,37 +195,20 @@ impl Compound {
     where
         P: IntoIterator<Item = &'p CompoundProperty>,
     {
-        let properties_str = {
-            let mut properties_str = String::new();
-            let mut properties_iter = properties.into_iter().peekable();
-            while let Some(property) = properties_iter.next() {
-                properties_str.push_str(property.name());
-                if properties_iter.peek().is_some() {
-                    properties_str.push(',');
+        let path = {
+            let mut path = String::from("/property/");
+            let mut prop_iter = properties.into_iter().peekable();
+            while let Some(property) = prop_iter.next() {
+                path.push_str(property.name());
+                if prop_iter.peek().is_some() {
+                    path.push(',');
                 }
             }
-            properties_str
+            path
         };
-
-        let url = format!(
-            "http://pubchem.ncbi.nlm.nih.gov/rest/pug/{domain}/{namespace}/{identifiers}/property/{properties}/XML",
-            domain = "compound",
-            namespace = self.namespace,
-            identifiers = self.identifiers,
-            properties = properties_str,
-        );
-
-        match ureq::get(&url).set("Accept", "application/xml").call() {
-            Err(ureq::Error::Status(400 | 404 | 405 | 500 | 501 | 503 | 504, response)) => {
-                let fault = rest::Fault::from_api_response(response)?;
-                Err(Error::Api(fault.into()))
-            }
-            Err(e) => return Err(Error::Request(e)),
-            Ok(response) => {
-                let mut table = rest::PropertyTable::from_api_response(response)?;
-                Ok(table.properties.pop().unwrap())
-            }
-        }
+        self.request(&path)
+            .and_then(|response| rest::PropertyTable::from_api_response(response))
+            .map(|mut table| table.properties.pop().unwrap())
     }
 
     /// Retrieve the molecular formula of the compound.
@@ -221,67 +232,25 @@ impl Compound {
     //     unimplemented!()
     // }
 
+    /// Retrieve the Compound IDs designating the compound.
     pub fn cids(&self) -> Result<Vec<i32>, Error> {
-        let url = format!(
-            "http://pubchem.ncbi.nlm.nih.gov/rest/pug/{domain}/{namespace}/{identifiers}/cids/XML",
-            domain = "compound",
-            namespace = self.namespace,
-            identifiers = self.identifiers,
-        );
-
-        match ureq::get(&url).set("Accept", "application/xml").call() {
-            Err(ureq::Error::Status(400 | 404 | 405 | 500 | 501 | 503 | 504, response)) => {
-                let fault = rest::Fault::from_api_response(response)?;
-                Err(Error::Api(fault.into()))
-            }
-            Err(e) => return Err(Error::Request(e)),
-            Ok(response) => {
-                let mut ids = rest::IdentifierList::from_api_response(response)?;
-                Ok(ids.cids)
-            }
-        }
+        self.request("cids")
+            .and_then(|response| rest::IdentifierList::from_api_response(response))
+            .map(|list| list.cids)
     }
 
+    /// Retrieve the Substance IDs associated with the compound.
     pub fn sids(&self) -> Result<Vec<i32>, Error> {
-        let url = format!(
-            "http://pubchem.ncbi.nlm.nih.gov/rest/pug/{domain}/{namespace}/{identifiers}/sids/XML",
-            domain = "compound",
-            namespace = self.namespace,
-            identifiers = self.identifiers,
-        );
-
-        match ureq::get(&url).set("Accept", "application/xml").call() {
-            Err(ureq::Error::Status(400 | 404 | 405 | 500 | 501 | 503 | 504, response)) => {
-                let fault = rest::Fault::from_api_response(response)?;
-                Err(Error::Api(fault.into()))
-            }
-            Err(e) => return Err(Error::Request(e)),
-            Ok(response) => {
-                let mut ids = rest::InformationList::from_api_response(response)?;
-                Ok(ids.informations.pop().unwrap().sids)
-            }
-        }
+        self.request("sids")
+            .and_then(|response| rest::InformationList::from_api_response(response))
+            .map(|mut list| list.informations.pop().unwrap().sids)
     }
 
+    /// Retrieve the Assay IDs associated with the compound.
     pub fn aids(&self) -> Result<Vec<i32>, Error> {
-        let url = format!(
-            "http://pubchem.ncbi.nlm.nih.gov/rest/pug/{domain}/{namespace}/{identifiers}/aids/XML",
-            domain = "compound",
-            namespace = self.namespace,
-            identifiers = self.identifiers,
-        );
-
-        match ureq::get(&url).set("Accept", "application/xml").call() {
-            Err(ureq::Error::Status(400 | 404 | 405 | 500 | 501 | 503 | 504, response)) => {
-                let fault = rest::Fault::from_api_response(response)?;
-                Err(Error::Api(fault.into()))
-            }
-            Err(e) => return Err(Error::Request(e)),
-            Ok(response) => {
-                let mut ids = rest::InformationList::from_api_response(response)?;
-                Ok(ids.informations.pop().unwrap().aids)
-            }
-        }
+        self.request("aids")
+            .and_then(|response| rest::InformationList::from_api_response(response))
+            .map(|mut list| list.informations.pop().unwrap().aids)
     }
 
     // pub fn assay_summary(&self) {
@@ -309,6 +278,7 @@ impl Compound {
 mod tests {
 
     use super::*;
+    use crate::error::ApiError;
 
     #[test]
     fn compound_new() {
