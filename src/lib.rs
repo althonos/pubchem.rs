@@ -2,10 +2,10 @@
 //!
 //! *Rust data structures and parser for the [UniprotKB database(s)].*
 //!
+extern crate form_urlencoded;
 extern crate quick_xml;
 extern crate thiserror;
 extern crate ureq;
-extern crate form_urlencoded;
 
 #[macro_use]
 mod parser;
@@ -146,7 +146,7 @@ impl Compound {
     pub fn with_inchi(inchi: &str) -> Self {
         Self {
             namespace: Cow::Borrowed("inchi"),
-            identifier: Cow::Owned(inchi.to_string())
+            identifier: Cow::Owned(inchi.to_string()),
         }
     }
 
@@ -154,7 +154,7 @@ impl Compound {
     pub fn with_inchikey(inchikey: &str) -> Self {
         Self {
             namespace: Cow::Borrowed("inchikey"),
-            identifier: Cow::Owned(inchikey.to_string())
+            identifier: Cow::Owned(inchikey.to_string()),
         }
     }
 
@@ -219,7 +219,9 @@ impl Compound {
     /// Retrieve the main PubChem designation for the compound.
     pub fn title(&self) -> Result<String, Error> {
         let properties = self.properties(&[CompoundProperty::Title])?;
-        Ok(properties.title.expect("All PubChem compounds should have a title."))
+        Ok(properties
+            .title
+            .expect("All PubChem compounds should have a title."))
     }
 
     /// Retrieve the molecular formula of the compound.
@@ -231,13 +233,17 @@ impl Compound {
     /// ```
     pub fn molecular_formula(&self) -> Result<String, Error> {
         let properties = self.properties(&[CompoundProperty::MolecularFormula])?;
-        Ok(properties.molecular_formula.expect("All PubChem compounds should have a formula."))
+        Ok(properties
+            .molecular_formula
+            .expect("All PubChem compounds should have a formula."))
     }
 
     /// Retrieve the canonical SMILES string for the compound.
     pub fn canonical_smiles(&self) -> Result<String, Error> {
         let properties = self.properties(&[CompoundProperty::CanonicalSMILES])?;
-        Ok(properties.canonical_smiles.expect("All PubChem compounds should have a SMILES."))
+        Ok(properties
+            .canonical_smiles
+            .expect("All PubChem compounds should have a SMILES."))
     }
 
     /// Retrieve the isomeric SMILES string for the compound.
@@ -249,7 +255,9 @@ impl Compound {
     /// ```
     pub fn isomeric_smiles(&self) -> Result<String, Error> {
         let properties = self.properties(&[CompoundProperty::IsomericSMILES])?;
-        Ok(properties.isomeric_smiles.expect("All PubChem compounds should have a SMILES."))
+        Ok(properties
+            .isomeric_smiles
+            .expect("All PubChem compounds should have a SMILES."))
     }
 
     // /// Retrieve the entire PubChem record for the compound.
