@@ -97,3 +97,18 @@ jobs:
       with:
         command: publish
         args: --token ${{ secrets.CRATES_IO_TOKEN }}
+  release:
+    environment: GitHub Releases
+    runs-on: ubuntu-latest
+    if: "startsWith(github.ref, 'refs/tags/v')"
+    name: Release
+    needs: publish
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v1
+      with:
+        submodules: true
+    - name: Release a Changelog
+      uses: rasmus-saks/release-a-changelog-action@v1.0.1
+      with:
+        github-token: '${{ secrets.GITHUB_TOKEN }}'
