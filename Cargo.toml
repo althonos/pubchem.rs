@@ -11,7 +11,7 @@ readme = "README.md"
 keywords = ["pubchem", "compound", "ncbi", "parser"]
 
 [dependencies]
-quick-xml = "0.22.0"
+quick-xml = "0.28.0"
 thiserror = "1.0.30"
 form_urlencoded = "1.0.1"
 [dependencies.ureq]
